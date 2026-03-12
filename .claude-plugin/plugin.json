@@ -1,0 +1,12 @@
+{
+  "name": "i18n-audit",
+  "version": "1.0.0",
+  "description": "Multi-locale i18n consistency checker — find missing keys, untranslated values, hardcoded strings, and placeholder mismatches across any framework",
+  "author": {
+    "name": "JHyeok5",
+    "url": "https://github.com/JHyeok5"
+  },
+  "repository": "https://github.com/JHyeok5/claude-plugin-i18n-audit",
+  "license": "MIT",
+  "keywords": ["i18n", "l10n", "internationalization", "localization", "translation", "multilingual"]
+}
