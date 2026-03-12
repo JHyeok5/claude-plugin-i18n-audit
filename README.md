@@ -71,6 +71,47 @@ The skill creates `.i18n-audit/` in your project on first run:
 
 Each run gets smarter: fewer false positives, faster detection, progress tracking.
 
+## Auto-Check Hook
+
+When installed, the plugin automatically monitors edits to locale files:
+- Detects changes to `*.json` files in locale/i18n/messages directories
+- Runs quick key consistency check against sibling locale files
+- Warns about missing keys or placeholder mismatches — no manual invocation needed
+
+## Parallel Agents
+
+For comprehensive audits, the plugin spawns parallel agents:
+- **key-checker**: Missing and orphaned key analysis
+- **hardcode-scanner**: Source code scan for un-internationalized strings
+
+These run concurrently for faster results on large codebases.
+
+## Script Output Example
+
+```
+$ node scripts/i18n-check.js src/locales --base=en
+
+# i18n Audit Report
+
+## Summary
+- **Base locale**: en (245 keys)
+- **Target locales**: ko, zh, zh-TW (3)
+- **Overall health**: 87% (639/735)
+
+## Per-Locale Stats
+| Locale | Present | Missing | Extra | Untranslated | Placeholder |
+|--------|---------|---------|-------|-------------|-------------|
+| ko     | 240/245 | 5       | 2     | 8           | 1           |
+| zh     | 232/245 | 13      | 0     | 15          | 3           |
+| zh-TW  | 235/245 | 10      | 1     | 12          | 2           |
+
+## Critical
+| # | Check | Locale | Key | Issue |
+|---|-------|--------|-----|-------|
+| 1 | Missing Key | zh | `payment.error.declined` | Key absent |
+| 2 | Placeholder | ko | `greeting.welcome` | Missing {{count}} |
+```
+
 ## Requirements
 
 - Claude Code CLI

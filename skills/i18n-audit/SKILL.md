@@ -83,175 +83,24 @@ The skill auto-detects the i18n setup by scanning common locations:
 ## Audit Checks
 
 ### Check 1: Missing Keys
-
-Keys present in the base locale but absent in target locales.
-
-**Impact**: Users see raw keys (e.g., `home.welcome_message`) or blank UI.
-
-**Example:**
-```
-Base (en.json):   { "home": { "title": "Home", "subtitle": "Welcome back" } }
-Target (ko.json): { "home": { "title": "홈" } }
-                                                  ← "subtitle" MISSING
-```
-
-**Severity**: Critical — blocks release.
-
-**Fix**: Add the missing key with a translated value or a placeholder:
-```json
-{ "home": { "title": "홈", "subtitle": "[NEEDS_TRANSLATION] Welcome back" } }
-```
+Keys in base locale absent from targets. **Impact**: Raw keys or blank UI. **Severity**: Critical.
 
 ### Check 2: Extra Keys (Orphaned)
-
-Keys present in target locales but NOT in the base locale.
-
-**Impact**: Dead code. Locale files grow unbounded, confusing translators.
-
-**Example:**
-```
-Base (en.json):   { "home": { "title": "Home" } }
-Target (ko.json): { "home": { "title": "홈", "old_banner": "이전 배너" } }
-                                                    ← "old_banner" ORPHANED
-```
-
-**Severity**: Warning — should clean up.
-
-**Fix**: Remove orphaned keys from all target locales.
+Keys in targets not present in base. **Impact**: Dead code, translator confusion. **Severity**: Warning.
 
 ### Check 3: Untranslated Values
-
-Keys that exist in target locales but contain:
-- Empty string `""`
-- Exact same value as base locale (possible copy-paste)
-- Placeholder markers: `TODO`, `FIXME`, `[TRANSLATE]`, `[NEEDS_TRANSLATION]`
-
-**Example:**
-```
-Base (en.json):   { "error": { "network": "Network error occurred" } }
-Target (ja.json): { "error": { "network": "Network error occurred" } }
-                                             ← IDENTICAL TO BASE — likely untranslated
-```
-
-**Severity**: Warning (empty/TODO) or Info (identical — may be intentional).
-
-**Exceptions**: Some values are intentionally identical across locales:
-- Brand names ("Google", "iPhone")
-- URLs and email addresses
-- Units ("km", "kg", "USD")
-- Technical codes ("HTTP 404")
-
-These are tracked in the glossary (see Self-Improvement) to avoid false positives.
+Empty strings, copy-pasted base values, or TODO/FIXME markers. **Severity**: Warning/Info.
 
 ### Check 4: Placeholder Consistency
-
-Translation strings with variables must use the same placeholders in all locales.
-
-**Placeholder formats by library:**
-
-| Library | Format | Example |
-|---------|--------|---------|
-| i18next | `{{name}}` | `Hello, {{name}}!` |
-| react-intl (ICU) | `{name}` | `Hello, {name}!` |
-| vue-i18n | `{name}` or `%{name}` | `Hello, {name}!` |
-| printf-style | `%s`, `%d`, `%1$s` | `Hello, %s!` |
-| Flutter | `{name}` | `Hello, {name}!` |
-| Android | `%1$s`, `%2$d` | `Hello, %1$s!` |
-| iOS | `%@`, `%d` | `Hello, %@!` |
-
-**Example:**
-```
-Base (en.json):   { "greeting": "Hello, {{name}}! You have {{count}} items." }
-Target (ko.json): { "greeting": "안녕하세요, {{name}}님!" }
-                                                          ← {{count}} MISSING
-```
-
-**Severity**: Critical — missing placeholders cause runtime errors or incorrect display.
+Mismatched `{{variables}}`, `{variables}`, or printf-style placeholders across locales. **Severity**: Critical.
 
 ### Check 5: Hardcoded Strings
-
-User-facing strings in source code that bypass the i18n system.
-
-**Detection patterns by framework:**
-
-| Framework | Translation call | Hardcoded = text without this call |
-|-----------|-----------------|-----------------------------------|
-| react-i18next | `t('key')` | JSX text content not wrapped in `t()` |
-| react-intl | `<FormattedMessage>` | JSX text without FormattedMessage |
-| vue-i18n | `$t('key')` | Template text without `$t()` |
-| Angular | `translate` pipe | Template text without translate pipe |
-| Flutter | `AppLocalizations` | String literals in widget build methods |
-
-**Exclusions** (do not flag):
-- Code comments and documentation
-- Log messages and console output
-- Test fixtures and mock data
-- CSS class names, routes, HTML attributes
-- `aria-label` if already i18n-aware
-- `alt=""` for decorative images
-
-**Severity**: Warning — each hardcoded string is a missed translation.
+User-facing text in source code that bypasses the i18n translation function. **Severity**: Warning.
 
 ### Check 6: Key Naming Convention
+Inconsistent key naming patterns (dot.notation vs camelCase vs SCREAMING_SNAKE). **Severity**: Info.
 
-Consistent key naming improves maintainability and translator experience.
-
-**Common conventions:**
-
-| Convention | Example | Used by |
-|-----------|---------|---------|
-| dot.notation | `home.hero.title` | Most JSON-based i18n |
-| SCREAMING_SNAKE | `HOME_HERO_TITLE` | Some Angular projects |
-| slash/path | `home/hero/title` | Some custom setups |
-| camelCase | `homeHeroTitle` | Some Flutter projects |
-
-**Checks:**
-- All keys follow the same convention (no mixing)
-- Nesting depth is consistent (warn if > 4 levels)
-- No special characters in keys (spaces, dashes in some formats)
-- Logical grouping: `section.element.modifier` pattern
-
-**Severity**: Info — style consistency.
-
-## Output Format
-
-```markdown
-# i18n Audit Report
-
-## Summary
-- **Base locale**: en (245 keys)
-- **Target locales**: ko, zh, zh-TW (3 locales)
-- **Overall health**: 87% (639/735 fully translated)
-- **Framework**: react-i18next (detected)
-
-## Issues by Severity
-
-### Critical (X issues — blocks release)
-| # | Check | Locale | Key | Issue |
-|---|-------|--------|-----|-------|
-| 1 | Missing Key | zh | payment.error.declined | Key absent |
-| 2 | Placeholder | ko | greeting.welcome | Missing {{count}} |
-
-### Warning (X issues — should fix)
-| # | Check | Locale | Key | Issue |
-|---|-------|--------|-----|-------|
-| 3 | Untranslated | zh-TW | settings.theme | Identical to base |
-| 4 | Extra Key | ko | deprecated.old_feature | Orphaned |
-| 5 | Hardcoded | — | src/components/Footer.tsx:12 | "Copyright 2024" |
-
-### Info (X issues)
-| # | Check | Details |
-|---|-------|---------|
-| 6 | Convention | 3 keys use camelCase, rest use dot.notation |
-
-## Delta (vs. previous audit)
-- Fixed: 5 issues resolved since last audit
-- New: 2 issues introduced
-- Remaining: 8 issues unchanged
-
-## Quick Fixes
-[Copy-paste ready JSON/code for each critical issue]
-```
+See `references/check-examples.md` for detailed examples and output format.
 
 ## Self-Improvement
 
@@ -332,10 +181,17 @@ As the project matures, the skill tightens its checks:
 ### Scripts
 
 - **`scripts/i18n-check.js`**: Zero-dependency Node.js locale checker. Run with `node scripts/i18n-check.js <locale-dir> [--base=en]`. Compares JSON locale files, detects missing keys, orphaned keys, untranslated values, and placeholder mismatches. Outputs markdown report to stdout. Exit code 0 = pass, 1 = critical issues. CI-ready.
+- **`scripts/locale-check-hook.sh`**: PostToolUse hook that auto-checks locale files on Write/Edit. Warns about critical issues without blocking.
 
 ### References
 
 - **`references/framework-detection.md`**: Detailed auto-detection rules for 10+ frameworks. Includes locale file discovery patterns, translation function signatures, hardcoded string exclusion rules, placeholder format reference, and `.i18n-audit/config.json` schema.
+- **`references/check-examples.md`**: Detailed BAD/GOOD examples for each of the 6 audit checks, placeholder format reference table, and full output report template.
+
+### Agents
+
+- **`agents/key-checker.md`**: Parallel agent for missing/orphaned key analysis across all locale files.
+- **`agents/hardcode-scanner.md`**: Parallel agent that scans source code for hardcoded user-facing strings bypassing i18n.
 
 ## References
 

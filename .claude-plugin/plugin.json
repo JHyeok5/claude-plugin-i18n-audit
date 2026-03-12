@@ -8,5 +8,7 @@
   },
   "repository": "https://github.com/JHyeok5/claude-plugin-i18n-audit",
   "license": "MIT",
-  "keywords": ["i18n", "l10n", "internationalization", "localization", "translation", "multilingual"]
+  "keywords": ["i18n", "l10n", "internationalization", "localization", "translation", "multilingual"],
+  "hooks": "./hooks/hooks.json",
+  "agents": "./agents/"
 }
