@@ -75,9 +75,41 @@ if ! command -v node &>/dev/null; then
   exit 0
 fi
 
+# --- Read base locale from .i18n-audit/config.json ---
+BASE_FLAG=""
+
+# Walk up from the locale file's directory to find .i18n-audit/config.json
+find_config() {
+  local dir="$1"
+  local root
+  root=$(stat -c '%m' "$dir" 2>/dev/null || echo "/")
+  while [[ "$dir" != "/" && "$dir" != "$root" ]]; do
+    if [[ -f "$dir/.i18n-audit/config.json" ]]; then
+      echo "$dir/.i18n-audit/config.json"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+CONFIG_FILE=$(find_config "$LOCALE_DIR") || true
+
+if [[ -n "$CONFIG_FILE" && -f "$CONFIG_FILE" ]]; then
+  if command -v jq &>/dev/null; then
+    BASE_LOCALE=$(jq -r '.baseLocale // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  else
+    # Fallback: grep extraction
+    BASE_LOCALE=$(grep -oP '"baseLocale"\s*:\s*"([^"]+)"' "$CONFIG_FILE" | head -1 | sed 's/.*"baseLocale"\s*:\s*"//;s/"$//' || true)
+  fi
+  if [[ -n "$BASE_LOCALE" ]]; then
+    BASE_FLAG="--base=$BASE_LOCALE"
+  fi
+fi
+
 # Run the check and capture output
 EDITED_BASENAME=$(basename "$FILE_PATH" .json)
-OUTPUT=$(node "$CHECK_SCRIPT" "$LOCALE_DIR" 2>&1) || true
+OUTPUT=$(node "$CHECK_SCRIPT" "$LOCALE_DIR" $BASE_FLAG 2>&1) || true
 
 # Check for critical issues in the output
 if echo "$OUTPUT" | grep -q "## Critical"; then
