@@ -327,6 +327,16 @@ As the project matures, the skill tightens its checks:
 7. **Provide context for translators**: Add `_description` keys or use i18n platforms with context support
 8. **Test with pseudo-localization**: Replace strings with accented characters to catch hardcoded text and layout issues
 
+## Bundled Resources
+
+### Scripts
+
+- **`scripts/i18n-check.js`**: Zero-dependency Node.js locale checker. Run with `node scripts/i18n-check.js <locale-dir> [--base=en]`. Compares JSON locale files, detects missing keys, orphaned keys, untranslated values, and placeholder mismatches. Outputs markdown report to stdout. Exit code 0 = pass, 1 = critical issues. CI-ready.
+
+### References
+
+- **`references/framework-detection.md`**: Detailed auto-detection rules for 10+ frameworks. Includes locale file discovery patterns, translation function signatures, hardcoded string exclusion rules, placeholder format reference, and `.i18n-audit/config.json` schema.
+
 ## References
 
 - [i18next documentation](https://www.i18next.com/)
